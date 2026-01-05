@@ -1,0 +1,129 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <title>Verifikasi KTP & Selfie</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            background: #f4f6f8;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+        }
+        .card {
+            background: white;
+            padding: 25px;
+            border-radius: 10px;
+            width: 380px;
+            box-shadow: 0 10px 25px rgba(0,0,0,.1);
+        }
+        h2 {
+            text-align: center;
+        }
+        input[type=file] {
+            width: 100%;
+            margin: 15px 0;
+        }
+        button {
+            width: 100%;
+            padding: 10px;
+            background: #2563eb;
+            border: none;
+            color: white;
+            border-radius: 6px;
+            cursor: pointer;
+        }
+        button:hover {
+            background: #1e40af;
+        }
+        .result {
+            margin-top: 20px;
+            text-align: center;
+        }
+        .status {
+            font-size: 18px;
+            font-weight: bold;
+            margin-bottom: 10px;
+        }
+        .progress-bar {
+            background: #e5e7eb;
+            border-radius: 6px;
+            height: 20px;
+            width: 100%;
+            overflow: hidden;
+        }
+        .progress {
+            height: 100%;
+            text-align: center;
+            color: white;
+            line-height: 20px;
+        }
+        .similar {
+            background-color: #16a34a;
+        }
+        .not-similar {
+            background-color: #dc2626;
+        }
+    </style>
+</head>
+<body>
+<div class="card">
+    <h2>Verifikasi KTP & Foto Pembelian Pupuk</h2>
+
+    <form id="form">
+        <input type="file" id="pdf" accept="application/pdf" required>
+        <button type="submit">Verifikasi</button>
+    </form>
+
+    <div class="result" id="result">
+        <!-- Hasil akan muncul di sini -->
+    </div>
+</div>
+
+<script>
+document.getElementById("form").onsubmit = async (e) => {
+    e.preventDefault();
+
+    const file = document.getElementById("pdf").files[0];
+    const formData = new FormData();
+    formData.append("pdf", file);
+
+    const resultDiv = document.getElementById("result");
+    resultDiv.innerHTML = "⏳ Memproses...";
+
+    try {
+        const res = await fetch("/verify", {
+            method: "POST",
+            body: formData
+        });
+
+        const data = await res.json();
+
+        if (data.error) {
+            resultDiv.innerHTML = `<div class="status" style="color:#dc2626;">❌ ${data.error}</div>`;
+            return;
+        }
+
+        const similarity = (data.similarity * 100).toFixed(2);
+        const isSimilar = data.similarity >= 0.5;
+
+        const statusText = isSimilar ? "✅ WAJAH SAMA" : "❌ WAJAH TIDAK SAMA";
+        const barClass = isSimilar ? "similar" : "not-similar";
+
+        resultDiv.innerHTML = `
+            <div class="status">${statusText}</div>
+            <div class="progress-bar">
+                <div class="progress ${barClass}" style="width:${similarity}%">
+                    ${similarity}%
+                </div>
+            </div>
+        `;
+    } catch (err) {
+        resultDiv.innerHTML = `<div class="status" style="color:#dc2626;">❌ Terjadi error: ${err.message}</div>`;
+    }
+};
+</script>
+</body>
+</html>
